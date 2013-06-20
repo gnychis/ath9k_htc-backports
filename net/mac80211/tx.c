@@ -1308,7 +1308,8 @@ static int invoke_tx_handlers(struct ieee80211_tx_data *tx)
 	CALL_TXH(ieee80211_tx_h_ps_buf);
 	CALL_TXH(ieee80211_tx_h_check_control_port_protocol);
 	CALL_TXH(ieee80211_tx_h_select_key);
-	if (!(tx->local->hw.flags & IEEE80211_HW_HAS_RATE_CONTROL))
+	if (!(tx->local->hw.flags & IEEE80211_HW_HAS_RATE_CONTROL) &&
+    !(info->flags & IEEE80211_TX_CTL_RC_BYPASS))
 		CALL_TXH(ieee80211_tx_h_rate_ctrl);
 
 	if (unlikely(info->flags & IEEE80211_TX_INTFL_RETRANSMISSION)) {
@@ -1462,7 +1463,7 @@ void ieee80211_xmit(struct ieee80211_sub_if_data *sdata, struct sk_buff *skb,
 	ieee80211_tx(sdata, skb, false, band);
 }
 
-static bool ieee80211_parse_tx_radiotap(struct sk_buff *skb)
+static bool ieee80211_parse_tx_radiotap(struct sk_buff *skb, struct ieee80211_local *local)
 {
 	struct ieee80211_radiotap_iterator iterator;
 	struct ieee80211_radiotap_header *rthdr =
@@ -1471,6 +1472,8 @@ static bool ieee80211_parse_tx_radiotap(struct sk_buff *skb)
 	int ret = ieee80211_radiotap_iterator_init(&iterator, rthdr, skb->len,
 						   NULL);
 	u16 txflags;
+  struct ieee80211_supported_band *sband;
+	sband = local->hw.wiphy->bands[info->band];
 
 	info->flags |= IEEE80211_TX_INTFL_DONT_ENCRYPT |
 		       IEEE80211_TX_CTL_DONTFRAG;
@@ -1520,6 +1523,40 @@ static bool ieee80211_parse_tx_radiotap(struct sk_buff *skb)
 			if (txflags & IEEE80211_RADIOTAP_F_TX_NOACK)
 				info->flags |= IEEE80211_TX_CTL_NO_ACK;
 			break;
+
+
+     case IEEE80211_RADIOTAP_RATE: {
+       int i, idx = -1;
+       int rate = *iterator.this_arg * 5;
+
+       for (i = 0; i < sband->n_bitrates; i++)
+         if (sband->bitrates[i].bitrate == rate) {
+           idx = i;
+           break;
+         }
+
+       /* Rate not available - rejecting */
+       if (idx < 0)
+         return false;
+
+       info->flags |= IEEE80211_TX_CTL_RC_BYPASS;
+       info->control.rates[0].idx = idx;
+       info->control.rates[0].count = 1;
+       for (i = 1; i < IEEE80211_TX_MAX_RATES; i++)
+         info->control.rates[i].idx = -1;
+       break;
+     }
+
+     case IEEE80211_RADIOTAP_DATA_RETRIES:
+       /*
+        * Only allow setting the number of retries in
+        * conjunction with the rates, when the rate control
+        * is bypassed.
+        */
+       if (info->flags & IEEE80211_TX_CTL_RC_BYPASS)
+         info->control.rates[0].count =
+           *iterator.this_arg;
+       break;
 
 		/*
 		 * Please update the file
@@ -1616,7 +1653,7 @@ netdev_tx_t ieee80211_monitor_start_xmit(struct sk_buff *skb,
 		      IEEE80211_TX_CTL_INJECTED;
 
 	/* process and remove the injection radiotap header */
-	if (!ieee80211_parse_tx_radiotap(skb))
+	if (!ieee80211_parse_tx_radiotap(skb,local))
 		goto fail;
 
 	rcu_read_lock();

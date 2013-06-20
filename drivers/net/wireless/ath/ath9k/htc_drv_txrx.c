@@ -267,6 +267,7 @@ static void ath9k_htc_tx_data(struct ath9k_htc_priv *priv,
 	struct ieee80211_hdr *hdr;
 	struct ath9k_htc_tx_ctl *tx_ctl;
 	struct tx_frame_hdr tx_hdr;
+  u32 rateIdx = tx_info->control.rates[0].idx;
 	u32 flags = 0;
 	u8 *qc, *tx_fhdr;
 	u16 qnum;
@@ -280,6 +281,7 @@ static void ath9k_htc_tx_data(struct ath9k_htc_priv *priv,
 	tx_hdr.node_idx = sta_idx;
 	tx_hdr.vif_idx = vif_idx;
 	tx_hdr.cookie = slot;
+  tx_hdr.rate_idx = rateIdx;
 
 	/*
 	 * This is a bit redundant but it helps to get

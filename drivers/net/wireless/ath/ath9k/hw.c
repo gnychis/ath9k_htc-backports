@@ -3258,6 +3258,15 @@ void ath9k_hw_name(struct ath_hw *ah, char *hw_name, size_t len)
 }
 EXPORT_SYMBOL(ath9k_hw_name);
 
+int ath9k_hw_get_rate_check(struct ath_hw *ah)
+{
+  u32 regval;
+
+  regval = REG_READ(ah, AR_MAC_PCU_TX_TIMER);
+  return (regval & 0xFFFF0000) >> 16;
+}
+EXPORT_SYMBOL(ath9k_hw_get_rate_check);
+
 int ath9k_hw_get_phy_cs(struct ath_hw *ah)
 {
  u32 regval;

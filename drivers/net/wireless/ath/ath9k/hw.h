@@ -983,6 +983,7 @@ static inline u8 get_streams(int mask)
 void ath9k_hw_deinit(struct ath_hw *ah);
 int ath9k_hw_init(struct ath_hw *ah);
 //gnychis
+int ath9k_hw_get_rate_check(struct ath_hw *ah);
 int ath9k_hw_get_phy_cs(struct ath_hw *ah);
 void ath9k_hw_set_phy_cs(struct ath_hw *ah, int val);
 int ath9k_hw_get_virt_cs(struct ath_hw *ah);

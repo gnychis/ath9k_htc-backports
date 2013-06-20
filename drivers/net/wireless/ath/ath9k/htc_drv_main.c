@@ -862,6 +862,7 @@ static void ath9k_htc_tx(struct ieee80211_hw *hw,
 	struct ath9k_htc_priv *priv = hw->priv;
 	struct ath_common *common = ath9k_hw_common(priv->ah);
 	int padpos, padsize, ret, slot;
+	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
 
 	hdr = (struct ieee80211_hdr *) skb->data;
 

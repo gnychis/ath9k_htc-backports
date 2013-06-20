@@ -926,7 +926,7 @@ static ssize_t read_file_phy_cs(struct file *file, char __user *user_buf,
 
  val = ath9k_hw_get_phy_cs(sc->ah);
  len = snprintf(buf, sizeof(buf), "%d\n", val);
- printk("-- gnychis: read_file_phy_cs: %d\n", val);
+ printk("-- gnychis: read_file_phy_cs: %d ... and piggy back: %d\n", val, ath9k_hw_get_rate_check(sc->ah));
  return simple_read_from_buffer(user_buf, count, ppos, buf, len);
 }
 
