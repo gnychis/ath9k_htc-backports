@@ -281,7 +281,7 @@ static void ath9k_htc_tx_data(struct ath9k_htc_priv *priv,
 	tx_hdr.node_idx = sta_idx;
 	tx_hdr.vif_idx = vif_idx;
 	tx_hdr.cookie = slot;
-  tx_hdr.rate_idx = rateIdx;
+  tx_hdr.rate_idx = rateIdx & 0xff;
 
 	/*
 	 * This is a bit redundant but it helps to get
