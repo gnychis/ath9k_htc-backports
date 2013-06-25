@@ -79,7 +79,7 @@ struct tx_frame_hdr {
 	u8 cookie;
 	u8 pad;
   u8 rate_idx;
-  u8 blah;
+  u8 mcs_flags;
 } __packed;
 
 struct tx_mgmt_hdr {

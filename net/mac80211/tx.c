@@ -1472,6 +1472,8 @@ static bool ieee80211_parse_tx_radiotap(struct sk_buff *skb, struct ieee80211_lo
 	int ret = ieee80211_radiotap_iterator_init(&iterator, rthdr, skb->len,
 						   NULL);
 	u16 txflags;
+  u8 fixed_rate = 0, fixed_rate_data_retries = 0;
+  u32 fixed_rate_flags = 0;
   struct ieee80211_supported_band *sband;
 	sband = local->hw.wiphy->bands[info->band];
 
@@ -1544,6 +1546,31 @@ static bool ieee80211_parse_tx_radiotap(struct sk_buff *skb, struct ieee80211_lo
        info->control.rates[0].count = 1;
        for (i = 1; i < IEEE80211_TX_MAX_RATES; i++)
          info->control.rates[i].idx = -1;
+       break;
+     }
+
+     case IEEE80211_RADIOTAP_MCS: {    /* u8,u8,u8 */
+       int i, idx = -1;
+       u8 mcs_have = iterator.this_arg[0];
+       if (mcs_have & IEEE80211_RADIOTAP_MCS_HAVE_MCS) {
+         fixed_rate = iterator.this_arg[2];
+         fixed_rate_flags |= IEEE80211_TX_RC_MCS;
+
+         // Now, stuff it in
+         info->flags |= IEEE80211_TX_CTL_RC_BYPASS;
+         info->control.rates[0].idx = 12+fixed_rate;
+         info->control.rates[0].count = 1;
+         for (i = 1; i < IEEE80211_TX_MAX_RATES; i++)
+           info->control.rates[i].idx = -1;
+       }
+       if ((mcs_have & IEEE80211_RADIOTAP_MCS_HAVE_GI) &&
+           (iterator.this_arg[1] & IEEE80211_RADIOTAP_MCS_SGI))
+         fixed_rate_flags |= IEEE80211_TX_RC_SHORT_GI;
+       if ((mcs_have & IEEE80211_RADIOTAP_MCS_HAVE_BW) &&
+           (iterator.this_arg[1]&IEEE80211_RADIOTAP_MCS_BW_40))
+         fixed_rate_flags |=
+           IEEE80211_TX_RC_40_MHZ_WIDTH;
+      
        break;
      }
 
